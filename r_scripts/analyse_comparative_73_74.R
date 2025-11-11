@@ -6,7 +6,7 @@ install.packages("corrplot")
 library("corrplot")
 
 
-setwd(dir = "C:/Users/UR82707255/Documents/R/données finales")
+setwd(dir = "C:/Users/UR82707255/Documents/R")
 
 df_existants = read.csv(file = "data_dpe_2_savoies_existants.csv",
                         header = TRUE,
@@ -952,7 +952,6 @@ df_adresses <- read.csv(file = "adresses_73-74.csv",
                         fileEncoding = "UTF-8")
 View(df_adresses)
 
-setwd("C:/Users/UR82707255/Documents/R/données finales")
 
 df_id_ban <- read.csv(file = "resultats_dpe_identifiant_ban_73_74.csv",
                       header = TRUE,
@@ -963,12 +962,12 @@ df_id_ban <- read.csv(file = "resultats_dpe_identifiant_ban_73_74.csv",
 View(df_id_ban)
 
 
-df_final <- merge(df,             # ton dataframe principal
-                  df_id_ban,        # celui avec les identifiants BAN
-                  by = "numero_dpe",# clé commune
-                  all.x = TRUE)     # garde toutes les lignes du df principal
+df_final <- merge(df,           
+                  df_id_ban,        
+                  by = "numero_dpe",
+                  all.x = TRUE)     
 
-# Vérification du résultat
+
 nrow(df_final)
 head(df_final)
 
@@ -990,6 +989,7 @@ write.csv(
 )
 
 # Carte de base
+
 carte <- leaflet(df_carto) %>%
   addTiles() %>%  # Fond de carte OpenStreetMap
   addCircleMarkers(
@@ -1015,7 +1015,7 @@ carte <- leaflet(df_carto) %>%
     title = "Étiquette DPE"
   )
 
-# Afficher la carte
+# print carte
 carte
 
 
@@ -1035,8 +1035,8 @@ cat("✓ Nombre total de logements avec coordonnées :", nrow(df_carto), "\n")
 df_73 <- df_carto[df_carto$departement == "73" & !is.na(df_carto$departement), ]
 df_74 <- df_carto[df_carto$departement == "74" & !is.na(df_carto$departement), ]
 
-cat("✓ Nombre de logements Savoie (73) :", nrow(df_73), "\n")
-cat("✓ Nombre de logements Haute-Savoie (74) :", nrow(df_74), "\n")
+cat("Nombre de logements Savoie (73) :", nrow(df_73), "\n")
+cat("Nombre de logements Haute-Savoie (74) :", nrow(df_74), "\n")
 
 # 3. Créer la carte avec filtres par DPE
 carte_dpe_filtrable <- leaflet() %>%
