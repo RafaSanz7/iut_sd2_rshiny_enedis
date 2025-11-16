@@ -1,24 +1,31 @@
 ---
-title: "Rapport d'Analyse : DPE 73 & 74"
+title: 'Rapport d''Analyse : DPE 73 & 74'
 author: "Rafaël Sanz & Quentin Zavagno"
 date: "`r Sys.Date()`"
-output: 
+output:
   html_document:
     toc: true
     toc_float: true
     theme: journal
     df_print: paged
-
-# Paramètres interactifs du rapport
+  pdf_document:
+    toc: true
+always_allow_html: true
 params:
   departement_choisi:
-    label: "Département :"
-    value: "Les deux"
-    choices: ["73", "74", "Les deux"]
+    label: 'Département :'
+    value: Les deux
+    choices:
+    - '73'
+    - '74'
+    - Les deux
   type_logement_choisi:
-    label: "Type de logement :"
-    value: "Les deux"
-    choices: ["ancien", "neuf", "Les deux"]
+    label: 'Type de logement :'
+    value: Les deux
+    choices:
+    - ancien
+    - neuf
+    - Les deux
 ---
 
 ```{r setup, include=FALSE}
@@ -154,7 +161,7 @@ Les résultats qui suivent mettent en lumière les tendances générales du terr
 
 ---
 
-# 🔑 Indicateurs clés 
+# Indicateurs clés 
 
 ```{r indicateurs}
 # Quelques indicateurs simples pour résumer le jeu filtré
@@ -166,13 +173,13 @@ kpi_cout_moyen <- paste0(
 )
 
 kpi_ges_total <- paste0(
-  format(round(mean(data_filtree$emission_ges_5_usages), 0), big.mark = " "), " kgCO₂/an"
+  format(round(mean(data_filtree$emission_ges_5_usages), 0), big.mark = " "), " kgCO2/an"
 )
 
 kpi_ges_moyen <- paste0(
   round(mean(data_filtree$emission_ges_5_usages /
                data_filtree$surface_habitable_logement, na.rm=TRUE), 2),
-  " kgCO₂/m²/an"
+  " kgCO2/m²/an"
 )
 
 kpi_surface_moyenne <- paste0(
@@ -193,7 +200,7 @@ kable(kpi_df, "html") %>%
   kable_styling(bootstrap_options = c("striped","hover"))
 ```
 
-# 💸 Répartition des coûts énergétiques
+# Répartition des coûts énergétiques
 
 
 ```{r part-usages}
@@ -229,7 +236,7 @@ kable(table_couts, "html", digits = 1, caption = "Part moyenne des coûts par us
   kable_styling(full_width = FALSE, bootstrap_options = c("striped", "hover"))
 ```
 
-# 🌍 Répartition des émissions GES
+# Répartition des émissions GES
 
 ```{r tableau-ges}
 table_ges <- df2 %>%
@@ -239,7 +246,7 @@ table_ges <- df2 %>%
   ) %>%
   group_by(departement) %>%
   summarise(
-    GES_total = paste0(round(mean(emission_ges_5_usages),1)," kgCO₂/an"),
+    GES_total = paste0(round(mean(emission_ges_5_usages),1)," kgCO2/an"),
     GES_chauffage_pct = paste0(round(mean(ges_chauffage_pct),1)," %"),
     GES_ECS_pct = paste0(round(mean(ges_ecs_pct),1)," %")
   )
@@ -249,7 +256,7 @@ kable(table_ges, "html") %>%
 
 ```
 
-# 🏷️ Répartition des Étiquettes DPE
+# Répartition des Étiquettes DPE
 
 ```{r repartition-dpe, fig.height=5}
 
@@ -307,7 +314,7 @@ if (length(unique(data_filtree$departement)) > 1) {
 
 ```
 
-# 💶 Coût annuel moyen par étiquette
+# Coût annuel moyen par étiquette
 ```{r cout-moyen-dpe, fig.height=5}
 
 # Si plusieurs départements présents → comparatif 73 vs 74
@@ -345,7 +352,7 @@ if (length(unique(data_filtree$departement)) > 1) {
 
 } else {
 
-  # Cas simple : un seul département
+  # Cas simple : un seul département ou filtrage CP
   data_bar <- data_filtree %>%
     filter(cout_total_5_usages < quantile(cout_total_5_usages, 0.99, na.rm = TRUE)) %>%
     group_by(etiquette_dpe) %>%
@@ -378,18 +385,18 @@ if (length(unique(data_filtree$departement)) > 1) {
 
 
 
-# 🧱 Répartition par période de construction
+# Répartition par période de construction
 
 ```{r repartition-periode, fig.height=5}
 
 df_plot_periode <- data_filtree %>%
-  filter(!is.na(periode_construction)) %>%     #  suppression dess NA
+  filter(!is.na(periode_construction)) %>%     # << suppression NA
   count(periode_construction) %>%
   mutate(
     pourcentage = n / sum(n),
     periode_construction = factor(
       periode_construction,
-      levels = unique(periode_construction)   
+      levels = unique(periode_construction)    # garde ton ordre d’origine
     )
   )
 
@@ -426,7 +433,7 @@ df_tab <- data_filtree %>%
     )
   )
 
-# Cas comparatif
+# ----- Cas comparatif -----
 if (length(unique(df_tab$departement)) > 1) {
 
   table_periode <- df_tab %>%
@@ -447,8 +454,7 @@ if (length(unique(df_tab$departement)) > 1) {
       bootstrap_options = c("striped", "hover", "condensed")
     )
 
-# cas simple
-  
+# ----- Cas simple -----
 } else {
 
   table_periode <- df_tab %>%
@@ -467,7 +473,7 @@ if (length(unique(df_tab$departement)) > 1) {
 ```
 
 
-# 📈 Corrélation Surface / Coût Chauffage
+# Corrélation Surface / Coût Chauffage
 
 ```{r corr}
 df_correl <- data_filtree %>%
