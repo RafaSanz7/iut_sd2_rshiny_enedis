@@ -99,50 +99,41 @@ iut_sd2_rshiny_enedis/
 # 6. Fonctionnalités
 ## 6.1 Onglet 1 — Données brutes
 
-Visualisation des DPE existants, neufs et des adresses
+- Visualisation des DPE existants, neufs et des adresses
 
-Filtrage dynamique
+- Filtrage dynamique
 
-Téléchargement CSV
+- Téléchargement CSV
 
 ## 6.2 Onglet 2 — Analyse Unidimensionnelle
 
-Histogrammes des classes énergétiques
-
-Répartition des émissions GES
-
-Consommation énergétique
-
-Analyse par année de construction
+- Histogrammes des classes énergétiques
+- Répartition des émissions GES
+- Consommation énergétique
+- Analyse par année de construction
 
 ## 6.3 Onglet 3 — Analyse Bi-variée & Carte
 
-Corrélations et régressions
-
-Carte Leaflet (uniquement adresses du 74 pour la version en ligne)
-
-Filtrage multicritère
+- Corrélations et régressions
+- Carte Leaflet (uniquement adresses du 74 pour la version en ligne)
+- Filtrage multicritère
 
 ## 6.4 Onglet 4 — Synthèse
 
-Top 10 communes selon GES ou consommation
-
-Statistiques descriptives
+- Top 10 communes selon GES ou consommation
+- Statistiques descriptives
 
 # 7. Authentification (si activée)
-Champ	Valeur
-Nom d'utilisateur	admin
-Mot de passe	admin
+
+- Nom d'utilisateur : 	admin
+- Mot de passe	: admin
 
 # 8. Notes de Développement
 
-Développement progressif en plusieurs scripts (/r_scripts).
-
-La branche principale contient la version finale propre.
-
-La branche Application inclut le script Deploy.R pour shinyapps.io.
-
-Le déploiement web a nécessité un allègement des données géographiques (adresses du 74 uniquement).
+- Développement progressif en plusieurs scripts (/r_scripts).
+- La branche principale contient la version finale propre.
+- La branche Application inclut le script Deploy.R pour shinyapps.io.
+- Le déploiement web a nécessité un allègement des données géographiques (adresses du 74 uniquement).
 
 # 9. Démonstration
 
