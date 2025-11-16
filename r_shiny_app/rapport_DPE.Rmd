@@ -1,0 +1,227 @@
+---
+title: "Rapport d'Analyse : DPE 73 & 74"
+author: "Rafaël Sanz & Quentin Zavagno"
+date: "`r Sys.Date()`"
+output: 
+  html_document:
+    toc: true
+    toc_float: true
+    theme: journal
+    df_print: paged
+params:
+  departement_choisi:
+    label: "Choisir un département :"
+    value: "Les deux"
+    choices: ["73", "74", "Les deux"]
+  type_logement_choisi:
+    label: "Choisir un type de logement :"
+    value: "Les deux"
+    choices: ["ancien", "neuf", "Les deux"]
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo = FALSE,
+  warning = FALSE,
+  message = FALSE,
+  fig.width = 10,
+  fig.height = 6,
+  dev = "png"
+)
+
+library(ggplot2)
+library(dplyr)
+library(scales)
+library(knitr)
+library(kableExtra)
+library(here)
+
+message("Chargement et préparation des données...")
+
+load_report_data <- function() {
+  df_existants <- read.csv(here("data_dpe_2_savoies_existants.csv"),
+                           header = TRUE, sep = ";", dec = ".", fileEncoding = "UTF-8")
+
+  df_neufs <- read.csv(here("data_dpe_2_savoies_neufs.csv"),
+                       header = TRUE, sep = ";", dec = ".", fileEncoding = "UTF-8")
+
+  df_neufs$logement <- "neuf"
+  df_neufs$annee_construction <- as.numeric(format(Sys.Date(), "%Y"))
+  df_existants$logement <- "ancien"
+
+  colonnes_communes <- intersect(colnames(df_neufs), colnames(df_existants))
+  df <- rbind(df_neufs[, colonnes_communes],
+              df_existants[, colonnes_communes])
+
+  df$departement <- ifelse(substr(df$code_insee_ban, 1, 2) == "73", "73",
+                           ifelse(substr(df$code_insee_ban, 1, 2) == "74", "74", NA))
+
+  numeric_cols <- c("cout_chauffage", "cout_ecs", "cout_total_5_usages",
+                    "emission_ges_5_usages", "surface_habitable_logement")
+
+  df[, numeric_cols] <- lapply(df[, numeric_cols],
+                               function(x) as.numeric(gsub(" ", "", x)))
+
+  df$periode_construction <- cut(df$annee_construction,
+                                 breaks = c(0,1960,1970,1980,1990,2000,2010,2050),
+                                 labels = c("Avant 1960", "1961 - 1970", "1971 - 1980",
+                                            "1981 - 1990", "1991 - 2000",
+                                            "2001 - 2010", "Après 2010"),
+                                 right = FALSE)
+
+  dpe_levels <- c("A","B","C","D","E","F","G")
+  df$etiquette_dpe <- factor(df$etiquette_dpe, levels = dpe_levels, ordered = TRUE)
+
+  df <- df %>%
+    filter(!is.na(departement),
+           !is.na(logement),
+           !is.na(etiquette_dpe),
+           !is.na(cout_total_5_usages),
+           !is.na(emission_ges_5_usages))
+
+  return(df)
+}
+
+data_full <- load_report_data()
+
+data_filtree <- data_full
+
+if (params$departement_choisi != "Les deux") {
+  data_filtree <- data_filtree %>% filter(departement == params$departement_choisi)
+}
+
+if (params$type_logement_choisi != "Les deux") {
+  data_filtree <- data_filtree %>% filter(logement == params$type_logement_choisi)
+}
+```
+
+# Introduction et Indicateurs Clés
+
+Ce rapport présente une analyse des Diagnostics de Performance Énergétique (DPE) pour les logements des départements de la Savoie (73) et de la Haute-Savoie (74).
+
+**Paramètres :**
+
+- Département : `r params$departement_choisi`  
+- Type de logement : `r params$type_logement_choisi`  
+
+---
+
+# Indicateurs Clés
+
+```{r}
+kpi_logements <- prettyNum(nrow(data_filtree), big.mark = " ")
+kpi_cout_moyen <- paste(round(mean(data_filtree$cout_total_5_usages),0), "€")
+kpi_ges_moyen <- paste(round(mean(data_filtree$emission_ges_5_usages),1), "kgCO₂/m²")
+kpi_surface_moyenne <- paste(round(mean(data_filtree$surface_habitable_logement),1), "m²")
+
+kpi_df <- data.frame(
+  Indicateur = c("Nombre total de logements", "Coût annuel moyen (5 usages)",
+                 "Émissions GES moyennes", "Surface habitable moyenne"),
+  Valeur = c(kpi_logements, kpi_cout_moyen, kpi_ges_moyen, kpi_surface_moyenne)
+)
+
+kable(kpi_df, "html") %>%
+  kable_styling(bootstrap_options = c("striped","hover","condensed"), full_width = FALSE)
+```
+
+---
+
+# Répartition des Étiquettes DPE
+
+```{r}
+df_plot_dpe <- data_filtree %>%
+  count(etiquette_dpe) %>%
+  mutate(pourcentage = n / sum(n))
+
+theme_rapport <- theme_minimal(base_size = 14) +
+  theme(plot.title = element_text(hjust = 0.5, face = "bold"),
+        legend.position = "none")
+
+ggplot(df_plot_dpe, aes(etiquette_dpe, pourcentage, fill = etiquette_dpe)) +
+  geom_bar(stat="identity") +
+  geom_text(aes(label = percent(pourcentage, accuracy = 0.1)),
+            vjust = -0.3, size = 3.5) +
+  scale_y_continuous(labels = percent_format()) +
+  scale_fill_manual(values = c("A"="#00B050","B"="#92D050","C"="#FFFF00",
+                               "D"="#FFC000","E"="#FF9900",
+                               "F"="#FF0000","G"="#C00000"),
+                    drop=FALSE) +
+  theme_rapport +
+  ggtitle("Répartition des Étiquettes DPE")
+```
+
+---
+
+# Répartition par Période de Construction
+
+```{r}
+df_plot_periode <- data_filtree %>%
+  count(periode_construction) %>%
+  mutate(pourcentage = n / sum(n))
+
+ggplot(df_plot_periode, aes(periode_construction, pourcentage, fill = periode_construction)) +
+  geom_bar(stat="identity") +
+  geom_text(aes(label = percent(pourcentage, accuracy = 0.1)),
+            vjust = -0.3, size = 3.5) +
+  scale_y_continuous(labels = percent_format()) +
+  theme_rapport +
+  ggtitle("Répartition par Période de Construction") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+---
+
+# Coût Total par Étiquette DPE (Boxplot)
+
+```{r}
+data_boxplot <- data_filtree %>%
+  filter(cout_total_5_usages < quantile(cout_total_5_usages, 0.99, na.rm=TRUE))
+
+ggplot(data_boxplot, aes(etiquette_dpe, cout_total_5_usages, fill = etiquette_dpe)) +
+  geom_boxplot() +
+  scale_y_continuous(labels = dollar_format(suffix=" €", prefix="")) +
+  scale_fill_manual(values=c("A"="#00B050","B"="#92D050","C"="#FFFF00",
+                             "D"="#FFC000","E"="#FF9900",
+                             "F"="#FF0000","G"="#C00000")) +
+  theme_rapport +
+  ggtitle("Distribution du Coût Total par Étiquette DPE")
+```
+
+---
+
+# Corrélation Surface / Coût Chauffage
+
+```{r}
+df_correl <- data_filtree %>%
+  filter(!is.na(surface_habitable_logement),
+         !is.na(cout_chauffage),
+         surface_habitable_logement < 500,
+         cout_chauffage < 10000)
+
+df_plot_correl <- if (nrow(df_correl) > 10000) sample_n(df_correl, 10000) else df_correl
+
+correlation <- cor(df_correl$surface_habitable_logement, df_correl$cout_chauffage)
+
+ggplot(df_plot_correl, aes(surface_habitable_logement, cout_chauffage)) +
+  geom_point(alpha = 0.2, color="blue") +
+  geom_smooth(method="lm", color="red", se=TRUE) +
+  labs(
+    x = "Surface Habitable (m²)",
+    y = "Coût Chauffage (€)",
+    title = "Corrélation entre la Surface Habitable et le Coût du Chauffage",
+    subtitle = paste("Coefficient de corrélation (Pearson) :", round(correlation, 3))
+  ) +
+  scale_y_continuous(labels = dollar_format(suffix=" €", prefix="")) +
+  theme_rapport
+```
+
+---
+
+# Conclusion
+
+L’analyse confirme :
+
+- Les logements F et G ont des coûts énergétiques beaucoup plus élevés.
+- La surface habitable est fortement corrélée au coût du chauffage : `r round(correlation, 3)`.
+
+Rapport généré automatiquement.
