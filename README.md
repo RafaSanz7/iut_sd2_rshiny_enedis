@@ -141,5 +141,8 @@ iut_sd2_rshiny_enedis/
 
 # 10. Auteurs
 
-Projet réalisé par Quentin ZAVAGNO & Rafael SANZ
+Projet réalisé par  :
+- Quentin ZAVAGNO
+- Rafael SANZ
+
 BUT Science des Données – IUT Lyon 2
