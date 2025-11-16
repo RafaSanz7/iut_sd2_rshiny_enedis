@@ -1,0 +1,10 @@
+name: r_shiny_app_rmd
+title:
+username: rafael-sanz
+account: rafael-sanz
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 16081099
+bundleId: 11186514
+url: https://rafael-sanz.shinyapps.io/r_shiny_app_rmd/
+version: 1
