@@ -29,7 +29,7 @@ Toutes les autres analyses restent basées sur les deux départements (73 & 74).
 ## 2. Prérequis
 
 Packages R nécessaires :
-
+```
 shiny
 
 leaflet
@@ -53,6 +53,7 @@ rlang
 jsonlite
 
 httr
+```
 
 ## 3. Lancer l’Application en Local
 
@@ -60,20 +61,27 @@ httr
 
 ```bash
 git clone https://github.com/TON-REPO/iut_sd2_rshiny_enedis.git
-
+```
 ### 3.2 Aller dans le dossier
+```
 /app_r_shiny
+```
 
 ### 3.3 Lancer l’application
+```
 shiny::runApp("app.R")
+```
 
 ### 4. Version en Ligne
 
 L’application est disponible ici :
+
+```
 https://rafael-sanz.shinyapps.io/r_shiny_app_rmd/
+```
 
 ## 5. Structure du Dépôt
-
+```
 iut_sd2_rshiny_enedis/
 │
 ├── app_r_shiny/                   # Code source de l'application Shiny
@@ -86,6 +94,7 @@ iut_sd2_rshiny_enedis/
 ├── documentation/                # Markdown, Rmd (documentation)
 │
 └── r_shiny_app_rmd (work_file)/  # Ancienne version de travail
+```
 
 # 6. Fonctionnalités
 ## 6.1 Onglet 1 — Données brutes
@@ -123,8 +132,8 @@ Statistiques descriptives
 # 7. Authentification (si activée)
 Champ	Valeur
 Nom d'utilisateur	admin
-
 Mot de passe	admin
+
 # 8. Notes de Développement
 
 Développement progressif en plusieurs scripts (/r_scripts).
