@@ -54,9 +54,10 @@ message("Chargement et préparation des données...")
 load_report_data <- function() {
 
   # Import des deux jeux de données
-  df_existants <- read.csv(here("data_dpe_2_savoies_existants.csv"),
+  df_existants <- read.csv("data_dpe_2_savoies_existants.csv",
                            sep = ";", dec = ".", fileEncoding = "UTF-8")
-  df_neufs <- read.csv(here("data_dpe_2_savoies_neufs.csv"),
+  
+  df_neufs <- read.csv("data_dpe_2_savoies_neufs.csv",
                        sep = ";", dec = ".", fileEncoding = "UTF-8")
 
   # Indicateur neuf / ancien
@@ -182,9 +183,13 @@ kpi_ges_moyen <- paste0(
   " kgCO2/m²/an"
 )
 
-kpi_surface_moyenne <- paste0(
-  round(mean(data_filtree$surface_habitable_logement), 1), " m²"
-)
+moy_surface <- mean(data_filtree$surface_habitable_logement, na.rm = TRUE)
+
+kpi_surface_moyenne <- if (is.na(moy_surface)) {
+  "—"
+} else {
+  paste0(round(moy_surface, 1), " m²")
+}
 
 kpi_df <- data.frame(
   Indicateur = c("Nombre total de logements",
