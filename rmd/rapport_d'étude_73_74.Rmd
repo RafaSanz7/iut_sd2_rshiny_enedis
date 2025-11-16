@@ -1,0 +1,524 @@
+---
+title: "Rapport d'Analyse : DPE 73 & 74"
+author: "Rafaël Sanz & Quentin Zavagno"
+date: "`r Sys.Date()`"
+output: 
+  html_document:
+    toc: true
+    toc_float: true
+    theme: journal
+    df_print: paged
+
+# Paramètres interactifs du rapport
+params:
+  departement_choisi:
+    label: "Département :"
+    value: "Les deux"
+    choices: ["73", "74", "Les deux"]
+  type_logement_choisi:
+    label: "Type de logement :"
+    value: "Les deux"
+    choices: ["ancien", "neuf", "Les deux"]
+---
+
+```{r setup, include=FALSE}
+
+# Options globales pour les chunks
+knitr::opts_chunk$set(
+  echo = FALSE,     # on n'affiche pas le code dans le rapport
+  warning = FALSE,
+  message = FALSE,
+  fig.width = 10,
+  fig.height = 6
+)
+
+# Packages utilisés dans tout le rapport
+library(ggplot2)
+library(dplyr)
+library(scales)
+library(knitr)
+library(tidyr)
+library(kableExtra)
+library(here)
+
+message("Chargement et préparation des données...")
+
+# Fonction pour charger et préparer les deux fichiers (neufs + existants)
+load_report_data <- function() {
+
+  # Import des deux jeux de données
+  df_existants <- read.csv(here("data_dpe_2_savoies_existants.csv"),
+                           sep = ";", dec = ".", fileEncoding = "UTF-8")
+  df_neufs <- read.csv(here("data_dpe_2_savoies_neufs.csv"),
+                       sep = ";", dec = ".", fileEncoding = "UTF-8")
+
+  # Indicateur neuf / ancien
+  df_neufs$logement <- "neuf"
+  df_existants$logement <- "ancien"
+
+  # On met l’année courante pour les logements neufs (souvent manquante)
+  df_neufs$annee_construction <- as.numeric(format(Sys.Date(), "%Y"))
+
+  # Fusion des colonnes communes
+  colonnes <- intersect(names(df_neufs), names(df_existants))
+  df <- rbind(df_neufs[, colonnes], df_existants[, colonnes])
+
+  # Extraction du département depuis le code INSEE
+  df$departement <- substr(df$code_insee_ban, 1, 2)
+  df$departement[df$departement %in% c("73","74") == FALSE] <- NA
+
+  # Conversion des colonnes numériques
+  num_cols <- c("cout_chauffage", "cout_ecs", "cout_total_5_usages",
+                "emission_ges_5_usages", "surface_habitable_logement")
+
+  df[num_cols] <- lapply(df[num_cols], function(x) {
+    as.numeric(gsub(" ", "", x))
+  })
+
+  # Construction de la variable période
+  df$periode_construction <- cut(
+    df$annee_construction,
+    breaks = c(0,1960,1970,1980,1990,2000,2010,2050),
+    labels = c("Avant 1960","1961 - 1970","1971 - 1980",
+               "1981 - 1990","1991 - 2000","2001 - 2010","Après 2010"),
+    right = FALSE
+  )
+
+  # Mise en ordre des classes DPE
+  dpe_levels <- c("A","B","C","D","E","F","G")
+  df$etiquette_dpe <- factor(df$etiquette_dpe, levels = dpe_levels, ordered = TRUE)
+
+  # Nettoyage final
+  df <- df %>%
+    filter(!is.na(departement),
+           !is.na(logement),
+           !is.na(etiquette_dpe),
+           !is.na(cout_total_5_usages),
+           !is.na(emission_ges_5_usages))
+
+  return(df)
+}
+
+# Chargement des données complètes
+data_full <- load_report_data()
+
+# Application des filtres choisis dans les paramètres
+data_filtree <- data_full
+
+if (params$departement_choisi != "Les deux") {
+  data_filtree <- filter(data_filtree, departement == params$departement_choisi)
+}
+
+if (params$type_logement_choisi != "Les deux") {
+  data_filtree <- filter(data_filtree, logement == params$type_logement_choisi)
+}
+
+# Thème graphique utilisé dans tous les graphes
+theme_rapport <- theme_minimal(base_size = 14) +
+  theme(plot.title = element_text(hjust = 0.5, face = "bold"))
+
+# Couleurs officielles du DPE
+colors_dpe <- c(
+  A = "#00B050", B = "#92D050", C = "#FFFF00",
+  D = "#FFC000", E = "#FF9900", F = "#FF0000", G = "#C00000"
+)
+```
+
+# Introduction 
+
+Dans le cadre du défi lancé par **Enedis** autour de l’évaluation de l’impact du Diagnostic de Performance Énergétique (DPE) sur les consommations des logements, la société **GreenTech Solutions** nous a confié la réalisation d’une étude statistique et d’une application interactive RShiny.
+
+Le présent rapport constitue le premier livrable attendu : une analyse claire et structurée des performances énergétiques des logements situés en **Savoie (73)** et en **Haute-Savoie (74)**.  
+
+Cette étude se concentre sur les données publiques issues des DPE « logements neufs » et « logements existants », enrichies par la Base Adresse Nationale.
+
+L’objectif est double :
+
+- **décrire et comparer les profils énergétiques** des deux départements ;  
+- **identifier les facteurs influençant les coûts énergétiques**, notamment l’étiquette DPE, la période de construction et la surface habitable.
+
+Pour répondre à ces objectifs, le rapport s'appuie sur :
+
+- des **KPI essentiels** (coûts, GES, surfaces, répartition des classes DPE) ;  
+- des **visualisations variées** : histogrammes, diagrammes en barres, nuages de points, graphiques comparatifs 73/74 ;  
+- des **statistiques bivariées**, dont la corrélation entre surface et coût de chauffage ;  
+- des analyses dynamiques basées sur les **filtres définis par l’utilisateur** : département, code postal et type de logement (ancien, neuf ou les deux).
+
+Les résultats qui suivent mettent en lumière les tendances générales du territoire, ainsi que les spécificités locales de chaque département.
+
+
+**Paramètres :**
+
+- Département : `r params$departement_choisi`  
+- Type de logement : `r params$type_logement_choisi`  
+
+---
+
+# 🔑 Indicateurs clés 
+
+```{r indicateurs}
+# Quelques indicateurs simples pour résumer le jeu filtré
+
+kpi_logements <- prettyNum(nrow(data_filtree), big.mark = " ")
+
+kpi_cout_moyen <- paste0(
+  format(round(mean(data_filtree$cout_total_5_usages), 0), big.mark = " "), " €"
+)
+
+kpi_ges_total <- paste0(
+  format(round(mean(data_filtree$emission_ges_5_usages), 0), big.mark = " "), " kgCO₂/an"
+)
+
+kpi_ges_moyen <- paste0(
+  round(mean(data_filtree$emission_ges_5_usages /
+               data_filtree$surface_habitable_logement, na.rm=TRUE), 2),
+  " kgCO₂/m²/an"
+)
+
+kpi_surface_moyenne <- paste0(
+  round(mean(data_filtree$surface_habitable_logement), 1), " m²"
+)
+
+kpi_df <- data.frame(
+  Indicateur = c("Nombre total de logements",
+                 "Coût annuel moyen (5 usages)",
+                 "GES total moyen",
+                 "GES moyen par m²",
+                 "Surface habitable moyenne"),
+  Valeur = c(kpi_logements, kpi_cout_moyen, kpi_ges_total,
+             kpi_ges_moyen, kpi_surface_moyenne)
+)
+
+kable(kpi_df, "html") %>% 
+  kable_styling(bootstrap_options = c("striped","hover"))
+```
+
+# 💸 Répartition des coûts énergétiques
+
+
+```{r part-usages}
+df2 <- data_filtree %>%
+  mutate(
+    cout_ecs_pct = cout_ecs / cout_total_5_usages * 100,
+    cout_chauffage_pct = cout_chauffage / cout_total_5_usages * 100,
+    cout_refroidissement_pct = cout_refroidissement / cout_total_5_usages * 100,
+    cout_eclairage_pct = cout_eclairage / cout_total_5_usages * 100,
+    cout_auxiliaires_pct = cout_auxiliaires / cout_total_5_usages * 100,
+    ges_chauffage_pct = emission_ges_chauffage / emission_ges_5_usages * 100,
+    ges_ecs_pct = emission_ges_ecs / emission_ges_5_usages * 100
+  )
+
+```
+
+## Tableau des coûts 
+
+
+```{r tableau-couts, results='asis'}
+table_couts <- df2 %>%
+  group_by(departement) %>%
+  summarise(
+    Chauffage = mean(cout_chauffage_pct, na.rm = TRUE),
+    ECS = mean(cout_ecs_pct, na.rm = TRUE),
+    Refroidissement = mean(cout_refroidissement_pct, na.rm = TRUE),
+    Éclairage = mean(cout_eclairage_pct, na.rm = TRUE),
+    Auxiliaires = mean(cout_auxiliaires_pct, na.rm = TRUE),
+    .groups = "drop"
+  )
+
+kable(table_couts, "html", digits = 1, caption = "Part moyenne des coûts par usage (%)") %>%
+  kable_styling(full_width = FALSE, bootstrap_options = c("striped", "hover"))
+```
+
+# 🌍 Répartition des émissions GES
+
+```{r tableau-ges}
+table_ges <- df2 %>%
+  mutate(
+    ges_chauffage_pct = pmin(ges_chauffage_pct,100),
+    ges_ecs_pct = pmin(ges_ecs_pct,100)
+  ) %>%
+  group_by(departement) %>%
+  summarise(
+    GES_total = paste0(round(mean(emission_ges_5_usages),1)," kgCO₂/an"),
+    GES_chauffage_pct = paste0(round(mean(ges_chauffage_pct),1)," %"),
+    GES_ECS_pct = paste0(round(mean(ges_ecs_pct),1)," %")
+  )
+
+kable(table_ges, "html") %>%
+  kable_styling(full_width = FALSE)
+
+```
+
+# 🏷️ Répartition des Étiquettes DPE
+
+```{r repartition-dpe, fig.height=5}
+
+# Si plusieurs départements présents -> comparaison
+if (length(unique(data_filtree$departement)) > 1) {
+
+  df_plot_dpe <- data_filtree %>%
+    count(departement, etiquette_dpe) %>%
+    group_by(departement) %>%
+    mutate(pourcentage = n / sum(n),
+           etiquette_dpe = factor(etiquette_dpe,
+                                  levels = c("A","B","C","D","E","F","G"),
+                                  ordered = TRUE))
+
+  ggplot(df_plot_dpe, aes(x = etiquette_dpe, y = pourcentage,
+                          fill = etiquette_dpe)) +
+    geom_col(position = "dodge", width = 0.7) +
+    geom_text(aes(label = paste0(round(pourcentage*100,1),"%"),
+                  group = departement),
+              position = position_dodge(width = 0.7),
+              vjust = -0.5, size = 3.8) +
+    scale_y_continuous(labels = scales::percent_format()) +
+    scale_fill_manual(values = colors_dpe, drop = FALSE) +
+    facet_wrap(~ departement, nrow = 1) +
+    labs(
+      title = "Répartition des Étiquettes DPE par département",
+      x = "Étiquette DPE", y = "Proportion (%)"
+    ) +
+    theme_rapport
+
+} else {
+
+  # Cas simple : 1 seul département ou filtrage CP
+  df_plot_dpe <- data_filtree %>%
+    count(etiquette_dpe) %>%
+    mutate(
+      pourcentage = n / sum(n),
+      etiquette_dpe = factor(etiquette_dpe,
+                             levels = c("A","B","C","D","E","F","G"),
+                             ordered = TRUE)
+    )
+
+  ggplot(df_plot_dpe, aes(x = etiquette_dpe, y = pourcentage, fill = etiquette_dpe)) +
+    geom_col(width = 0.7) +
+    geom_text(aes(label = paste0(round(pourcentage*100,1),"%")), 
+              vjust = -0.4, size = 4) +
+    scale_y_continuous(labels = scales::percent_format()) +
+    scale_fill_manual(values = colors_dpe, drop = FALSE) +
+    labs(
+      title = "Répartition des Étiquettes DPE",
+      x = "Étiquette DPE", y = "Proportion (%)"
+    ) +
+    theme_rapport
+}
+
+```
+
+# 💶 Coût annuel moyen par étiquette
+```{r cout-moyen-dpe, fig.height=5}
+
+# Si plusieurs départements présents → comparatif 73 vs 74
+if (length(unique(data_filtree$departement)) > 1) {
+
+  data_bar <- data_filtree %>%
+    filter(cout_total_5_usages < quantile(cout_total_5_usages, 0.99, na.rm = TRUE)) %>%
+    group_by(departement, etiquette_dpe) %>%
+    summarise(
+      cout_moyen = mean(cout_total_5_usages, na.rm = TRUE),
+      .groups = "drop"
+    ) %>%
+    mutate(
+      etiquette_dpe = factor(etiquette_dpe,
+                             levels = c("A","B","C","D","E","F","G"),
+                             ordered = TRUE)
+    )
+
+  ggplot(data_bar, aes(x = etiquette_dpe, y = cout_moyen, fill = etiquette_dpe)) +
+    geom_col(position = position_dodge(width = 0.7), width = 0.7) +
+    geom_text(aes(label = paste0(format(round(cout_moyen, 0), big.mark = " "), " €"),
+                  group = departement),
+              position = position_dodge(width = 0.7),
+              vjust = -0.4, size = 3.5) +
+    scale_y_continuous(labels = scales::comma_format(suffix = " €", big.mark = " "),
+                       expand = expansion(mult = c(0, 0.15))) +
+    scale_fill_manual(values = colors_dpe, drop = FALSE) +
+    facet_wrap(~ departement, nrow = 1) +
+    labs(
+      title = "Coût annuel moyen (5 usages) par étiquette DPE",
+      x = "Étiquette DPE",
+      y = "Coût annuel moyen (€)"
+    ) +
+    theme_rapport
+
+} else {
+
+  # Cas simple : un seul département ou filtrage CP
+  data_bar <- data_filtree %>%
+    filter(cout_total_5_usages < quantile(cout_total_5_usages, 0.99, na.rm = TRUE)) %>%
+    group_by(etiquette_dpe) %>%
+    summarise(
+      cout_moyen = mean(cout_total_5_usages, na.rm = TRUE),
+      .groups = "drop"
+    ) %>%
+    mutate(
+      etiquette_dpe = factor(etiquette_dpe,
+                             levels = c("A","B","C","D","E","F","G"),
+                             ordered = TRUE)
+    )
+
+  ggplot(data_bar, aes(x = etiquette_dpe, y = cout_moyen, fill = etiquette_dpe)) +
+    geom_col(width = 0.7) +
+    geom_text(aes(label = paste0(format(round(cout_moyen, 0), big.mark = " "), " €")),
+              vjust = -0.4, size = 4) +
+    scale_y_continuous(labels = scales::comma_format(suffix = " €", big.mark = " "),
+                       expand = expansion(mult = c(0, 0.15))) +
+    scale_fill_manual(values = colors_dpe, drop = FALSE) +
+    labs(
+      title = "Coût annuel moyen (5 usages) par étiquette DPE",
+      x = "Étiquette DPE",
+      y = "Coût annuel moyen (€)"
+    ) +
+    theme_rapport
+}
+
+```
+
+
+
+# 🧱 Répartition par période de construction
+
+```{r repartition-periode, fig.height=5}
+
+df_plot_periode <- data_filtree %>%
+  filter(!is.na(periode_construction)) %>%     # << suppression NA
+  count(periode_construction) %>%
+  mutate(
+    pourcentage = n / sum(n),
+    periode_construction = factor(
+      periode_construction,
+      levels = unique(periode_construction)    # garde ton ordre d’origine
+    )
+  )
+
+ggplot(df_plot_periode,
+       aes(x = periode_construction,
+           y = pourcentage,
+           fill = periode_construction)) +
+  geom_col(width = 0.7) +
+  geom_text(aes(label = paste0(round(pourcentage*100,1),"%")),
+            vjust = -0.3, size = 3.5) +
+  scale_y_continuous(labels = scales::percent_format()) +
+  scale_fill_brewer(palette = "Set3") +
+  labs(
+    title = "Répartition par Période de Construction",
+    x = "Période de construction",
+    y = "Proportion (%)"
+  ) +
+  theme_rapport +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+### Tableau de répartion des logements du 73 et 74 en fonction de la période de construction
+
+```{r tableau-periodes, results='asis'}
+# On retire les NA (comme pour le graphique)
+df_tab <- data_filtree %>%
+  filter(!is.na(periode_construction)) %>% 
+  mutate(
+    periode_construction = factor(
+      periode_construction,
+      levels = c("Avant 1960","1961 - 1970","1971 - 1980",
+                 "1981 - 1990","1991 - 2000","2001 - 2010","Après 2010"),
+      ordered = TRUE
+    )
+  )
+
+# ----- Cas comparatif -----
+if (length(unique(df_tab$departement)) > 1) {
+
+  table_periode <- df_tab %>%
+    count(departement, periode_construction) %>%
+    group_by(departement) %>%
+    mutate(pct = round(n / sum(n) * 100, 1)) %>%
+    ungroup() %>%
+    tidyr::pivot_wider(
+      names_from = departement,
+      values_from = c(n, pct),
+      values_fill = 0
+    ) %>%
+    arrange(periode_construction)   # <-- ordre correct
+
+  kable(table_periode, "html") %>%
+    kable_styling(
+      full_width = FALSE,
+      bootstrap_options = c("striped", "hover", "condensed")
+    )
+
+# ----- Cas simple -----
+} else {
+
+  table_periode <- df_tab %>%
+    count(periode_construction) %>%
+    mutate(pct = round(n / sum(n) * 100, 1)) %>%
+    arrange(periode_construction)
+
+  kable(table_periode, "html") %>%
+    kable_styling(
+      full_width = FALSE,
+      bootstrap_options = c("striped", "hover", "condensed")
+    )
+}
+
+
+```
+
+
+# 📈 Corrélation Surface / Coût Chauffage
+
+```{r corr}
+df_correl <- data_filtree %>%
+  filter(!is.na(surface_habitable_logement),
+         !is.na(cout_chauffage),
+         surface_habitable_logement < 500,
+         cout_chauffage < 10000)
+
+correlation <- cor(df_correl$surface_habitable_logement,
+                   df_correl$cout_chauffage,
+                   use="complete.obs")
+
+ggplot(df_correl, aes(surface_habitable_logement, cout_chauffage)) +
+  geom_point(alpha = 0.15, color="steelblue") +
+  geom_smooth(method="lm", se=TRUE, color="red") +
+  labs(
+    title = "Corrélation entre la surface et le coût du chauffage",
+    subtitle = paste("Corrélation de Pearson :", round(correlation,3)),
+    x = "Surface habitable (m²)",
+    y = "Coût du chauffage (€)"
+  ) +
+  theme_rapport
+```
+
+---
+
+# Conclusion
+
+Cette analyse met en évidence plusieurs enseignements clés concernant la performance énergétique des logements étudiés.
+
+**1. Répartition des DPE**  
+Les étiquettes *C, D* et *E* regroupent la majorité des logements, tandis que les DPE *F* et *G* — plus énergivores — restent significativement minoritaires, mais présentent des coûts nettement supérieurs.  
+Cela confirme que la performance énergétique exerce un impact direct sur le niveau de dépenses annuelles.
+
+**2. Différences entre Savoie et Haute-Savoie**  
+Lorsque les deux départements sont analysés conjointement, des écarts apparaissent :
+- La **Haute-Savoie (74)** concentre proportionnellement davantage de logements récents (période *Après 2010*).  
+- La **Savoie (73)** présente une part légèrement plus élevée de bâtiments anciens (*Avant 1960*).
+
+Ces différences structurelles influencent partiellement les niveaux de consommation et les profils énergétiques observés.
+
+**3. Coûts énergétiques**  
+Le coût annuel moyen suit une progression claire selon les étiquettes DPE :  
+→ Les logements F et G se distinguent par des coûts beaucoup plus élevés que les classes A à D, reflétant une moindre efficacité énergétique.
+
+**4. Corrélation surface – coût chauffage**  
+L’analyse met en évidence une relation positive entre la surface habitable et le coût du chauffage.  
+Le coefficient de corrélation de Pearson est : **`r round(correlation, 3)`**.  
+Cela traduit une **corrélation modérée**, logique : les logements plus grands tendent à générer des dépenses plus élevées, tout en restant sensibles à la qualité de l'isolation et au type d’énergie utilisée.
+
+---
+
+**En synthèse**, ce rapport confirme l’importance des caractéristiques structurelles (période de construction, surface, typologie des logements) et de l’étiquette DPE dans l’explication des performances énergétiques observées.
+
+Rapport généré automatiquement à partir des données filtrées.
