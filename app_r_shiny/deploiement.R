@@ -1,7 +1,8 @@
 install.packages("rsconnect")
 
-rsconnect::setAccountInfo(name='quentin74',
-                          token='76EDCBDB381E215C660FD1E551B9D839',
-                          secret='U92P78U3qRI5RM74muhTjg1RXjUO2rmyLwf6VVny')
+rsconnect::setAccountInfo(name='rafael-sanz',
+                          token='C1C9CE144EB73B40AD9D85FDBD25708A',
+                          secret='We4oJgKRyM5mx4iLF4bLcO8HE6QhwfELLRRfPGiS')
 
-rsconnect::deployApp("C:/Users/utilisateur/OneDrive - univ-lyon2.fr/Espace Travail/Projet-r/App_Shiny")
+rsconnect::deployApp("C:/Users/UR82707255/Documents/GitHub/iut_sd2_rshiny_enedis/r_shiny_app_rmd")
+
