@@ -82,7 +82,7 @@ shiny::runApp("app.R")
 
 L’application est disponible ici :
 
-https://rafael-sanz.shinyapps.io/r_shiny_app_rmd/
+https://rafael-sanz.shinyapps.io/app_savoie/
 
 ---
 
