@@ -6,18 +6,18 @@ install.packages("corrplot")
 library("corrplot")
 
 
-setwd(dir = "C:/Users/UR82707255/Documents/R")
+setwd(dir = "C:/Users/UR82707255/Documents/GitHub/iut_sd2_rshiny_enedis/data/")
 
 df_existants = read.csv(file = "data_dpe_2_savoies_existants.csv",
                         header = TRUE,
-                        sep = ";",
+                        sep = ",",
                         dec = ".",
                         fileEncoding = "UTF-8")
 
 
 df_neufs = read.csv(file = "data_dpe_2_savoies_neufs.csv",
                     header = TRUE,
-                    sep = ";",
+                    sep = ",",
                     dec = ".",
                     fileEncoding = "UTF-8")
 
@@ -25,7 +25,7 @@ dim(df_existants)
 dim(df_neufs)
 
 
-
+View(df_existants)
 df_neufs$logement <- "neuf"
 df_neufs$anne_construction <- Sys.Date()
 df_neufs$annee_construction <- as.numeric(format(Sys.Date(), "%Y"))
@@ -88,6 +88,7 @@ moyenne_part_ecs_par_dept
 moyenne_part_refroidissement_par_dept
 moyenne_part_eclairage_par_dept
 moyenne_part_auxiliaires_par_dept
+
 
 
 df$ges_chauffage_pourcentage <- round(df$emission_ges_chauffage / df$emission_ges_5_usages * 100, 2)
@@ -943,7 +944,6 @@ cor(df$cout_chauffage, df$surface_habitable_logement, use = "complete.obs")
 
 
 # adresse & cartographie 
-setwd("C:/Users/UR82707255/Documents/R/adresses")
 
 df_adresses <- read.csv(file = "adresses_73-74.csv",
                         header = TRUE,
@@ -988,37 +988,6 @@ write.csv(
   fileEncoding = "UTF-8"
 )
 
-# Carte de base
-
-carte <- leaflet(df_carto) %>%
-  addTiles() %>%  # Fond de carte OpenStreetMap
-  addCircleMarkers(
-    lng = ~lon,
-    lat = ~lat,
-    color = ~palette_dpe(etiquette_dpe),
-    radius = 5,
-    fillOpacity = 0.7,
-    stroke = TRUE,
-    weight = 1,
-    popup = ~paste0(
-      "<b>Étiquette DPE:</b> ", etiquette_dpe, "<br>",
-      "<b>Type:</b> ", type_batiment, "<br>",
-      "<b>Année:</b> ", annee_construction, "<br>",
-      "<b>Coût total:</b> ", round(cout_total_5_usages, 0), " €<br>",
-      "<b>Commune:</b> ", nom_commune
-    )
-  ) %>%
-  addLegend(
-    position = "bottomright",
-    pal = palette_dpe,
-    values = ~etiquette_dpe,
-    title = "Étiquette DPE"
-  )
-
-# print carte
-carte
-
-
 # ️ CARTE AVEC FILTRES PAR ÉTIQUETTE DPE (version simplifiée)
 
 df_join$departement <- substr(df_join$code_insee_ban, 1, 2)
@@ -1029,14 +998,14 @@ library(leaflet)
 # 1. Filtrer les données avec lon/lat valides
 df_carto <- df_join[!is.na(df_join$lon) & !is.na(df_join$lat), ]
 
-cat("✓ Nombre total de logements avec coordonnées :", nrow(df_carto), "\n")
+cat("✓ Nombre total de logements avec coordonnées :", nrow(df_carto), "/n")
 
 # 2. Filtrer par département
 df_73 <- df_carto[df_carto$departement == "73" & !is.na(df_carto$departement), ]
 df_74 <- df_carto[df_carto$departement == "74" & !is.na(df_carto$departement), ]
 
-cat("Nombre de logements Savoie (73) :", nrow(df_73), "\n")
-cat("Nombre de logements Haute-Savoie (74) :", nrow(df_74), "\n")
+cat("Nombre de logements Savoie (73) :", nrow(df_73), "/n")
+cat("Nombre de logements Haute-Savoie (74) :", nrow(df_74), "/n")
 
 # 3. Créer la carte avec filtres par DPE
 carte_dpe_filtrable <- leaflet() %>%

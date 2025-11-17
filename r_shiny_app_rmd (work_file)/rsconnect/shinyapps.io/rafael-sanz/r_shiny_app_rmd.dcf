@@ -5,6 +5,6 @@ account: rafael-sanz
 server: shinyapps.io
 hostUrl: https://api.shinyapps.io/v1
 appId: 16081099
-bundleId: 11186514
+bundleId: 11187069
 url: https://rafael-sanz.shinyapps.io/r_shiny_app_rmd/
 version: 1

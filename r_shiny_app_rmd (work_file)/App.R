@@ -43,30 +43,35 @@ load_data <- function() {
   # Affiche un message dans la console R
   message("Optimisation : Chargement des 4 fichiers CSV...")
   
-  # Lecture des fichiers
   df_existants <- read.csv(file = here::here("data", "data_dpe_2_savoies_existants.csv"),
-                           header = TRUE, sep = ";", dec = ".", fileEncoding = "UTF-8")
+                           header = TRUE, sep = ",", dec = ".", fileEncoding = "UTF-8")
   df_neufs <- read.csv(file = here::here("data", "data_dpe_2_savoies_neufs.csv"),
-                       header = TRUE, sep = ";", dec = ".", fileEncoding = "UTF-8")
-  df_adresses <- read.csv(file = here::here("data","adresses_73-74.csv"), 
-                          header = TRUE, sep = ";", dec = ".", fileEncoding = "UTF-8")
-  df_id_ban <- read.csv(file = here::here("data", "resultats_dpe_identifiant_ban_73_74.csv"), 
-                        header = TRUE, sep = ";", dec = ".", fileEncoding = "UTF-8")
+                       header = TRUE, sep = ",", dec = ".", fileEncoding = "UTF-8")
   
-  # --- Pré-traitement et fusion (identique à avant) ---
-  message("Optimisation : Fusion et nettoyage des données...")
+  dim(df_existants)
+  dim(df_neufs)
   
+  
+  View(df_existants)
   df_neufs$logement <- "neuf"
+  df_neufs$anne_construction <- Sys.Date()
   df_neufs$annee_construction <- as.numeric(format(Sys.Date(), "%Y"))
   df_existants$logement <- "ancien"
   
-  colonnes_communes <- intersect(colnames(df_neufs), colnames(df_existants))
   
-  df <- rbind(df_neufs[, colonnes_communes],
-              df_existants[, colonnes_communes])
+  colnames_neufs = colnames(df_neufs)
+  colnames_existants = colnames(df_existants)
   
+  colonnes_communes = intersect(colnames_neufs, colnames_existants)
+  
+  df = rbind(df_neufs[ , colonnes_communes],
+             df_existants[ , colonnes_communes])
+  
+  dim(df)
+  class(df$date_reception_dpe)
   df$date_reception_dpe <- as.Date(df$date_reception_dpe, format = "%d/%m/%Y")
   df$date_reception_dpe <- as.numeric(format(df$date_reception_dpe, "%Y"))
+  
   
   df$departement <- ifelse(substr(df$code_insee_ban, 1, 2) == "73", "73", 
                            ifelse(substr(df$code_insee_ban, 1, 2) == "74", "74", NA))

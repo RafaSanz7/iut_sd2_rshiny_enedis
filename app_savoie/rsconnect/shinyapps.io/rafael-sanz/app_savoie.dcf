@@ -1,0 +1,10 @@
+name: app_savoie
+title:
+username: rafael-sanz
+account: rafael-sanz
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 16082359
+bundleId: 11187214
+url: https://rafael-sanz.shinyapps.io/app_savoie/
+version: 1

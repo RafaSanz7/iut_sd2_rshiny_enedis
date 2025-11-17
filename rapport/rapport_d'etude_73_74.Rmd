@@ -134,25 +134,34 @@ colors_dpe <- c(
 
 # Introduction 
 
-Dans le cadre du défi lancé par **Enedis** autour de l’évaluation de l’impact du Diagnostic de Performance Énergétique (DPE) sur les consommations des logements, la société **GreenTech Solutions** nous a confié la réalisation d’une étude statistique et d’une application interactive RShiny.
+Dans le cadre du défi proposé par Enedis sur l’évaluation de l’impact du Diagnostic de Performance Énergétique (DPE) sur les consommations des logements, la société GreenTech Solutions nous a confié la réalisation d’une étude statistique ainsi qu’une application interactive développée sous RShiny.
 
-Le présent rapport constitue le premier livrable attendu : une analyse claire et structurée des performances énergétiques des logements situés en **Savoie (73)** et en **Haute-Savoie (74)**.  
+Ce rapport constitue le premier livrable du projet. Il présente une analyse structurée des performances énergétiques des logements situés en Savoie (73) et en Haute-Savoie (74), à partir des données publiques des DPE « logements neufs » et « logements existants », enrichies par la Base Adresse Nationale.
 
-Cette étude se concentre sur les données publiques issues des DPE « logements neufs » et « logements existants », enrichies par la Base Adresse Nationale.
+Étant donné le volume très important des données initiales, un échantillonnage maîtrisé a été réalisé :
 
-L’objectif est double :
+un échantillon fixe de 10 000 adresses issues de la BAN ;
 
-- **décrire et comparer les profils énergétiques** des deux départements ;  
-- **identifier les facteurs influençant les coûts énergétiques**, notamment l’étiquette DPE, la période de construction et la surface habitable.
+un échantillon de 10% des DPE neufs et existants.
+Cette réduction de volume permet d’assurer de bonnes performances dans l’application Shiny tout en préservant la représentativité statistique des distributions observées.
 
-Pour répondre à ces objectifs, le rapport s'appuie sur :
+L’étude poursuit deux objectifs principaux :
 
-- des **KPI essentiels** (coûts, GES, surfaces, répartition des classes DPE) ;  
-- des **visualisations variées** : histogrammes, diagrammes en barres, nuages de points, graphiques comparatifs 73/74 ;  
-- des **statistiques bivariées**, dont la corrélation entre surface et coût de chauffage ;  
-- des analyses dynamiques basées sur les **filtres définis par l’utilisateur** : département, code postal et type de logement (ancien, neuf ou les deux).
+décrire et comparer les profils énergétiques des deux départements ;
 
-Les résultats qui suivent mettent en lumière les tendances générales du territoire, ainsi que les spécificités locales de chaque département.
+identifier les facteurs influençant les coûts énergétiques, en particulier l’étiquette DPE, la période de construction et la surface habitable.
+
+Pour répondre à ces objectifs, l’analyse s’appuie sur :
+
+des KPI clés (coûts, émissions GES, surfaces, répartition des classes DPE),
+
+des visualisations variées (histogrammes, barres, comparaisons départementales, nuages de points),
+
+des statistiques bivariées, dont la corrélation entre surface habitable et coût de chauffage,
+
+ainsi que des analyses interactives intégrées dans l’application Shiny.
+
+Les résultats présentés mettent en lumière les tendances générales observées sur le territoire, ainsi que les spécificités propres à chaque département.
 
 
 **Paramètres :**
