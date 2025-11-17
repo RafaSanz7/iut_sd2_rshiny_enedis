@@ -154,7 +154,7 @@ iut_sd2_rshiny_enedis/
 ## 9. Démonstration
 
 Une démonstration vidéo sera ajoutée prochainement.  
-Lien YouTube : *à venir*.
+Lien YouTube : https://www.youtube.com/watch?v=JlKw9dKC8-M
 
 ---
 
